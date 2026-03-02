@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mindvault</string>
+    <string name="title_activity_main">Mindvault</string>
+    <string name="package_name">com.mindvault.app</string>
+    <string name="custom_url_scheme">com.mindvault.app</string>
+</resources>
