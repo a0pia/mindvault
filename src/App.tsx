@@ -20,6 +20,37 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Yeni Modern Logo Bileşeni
+function ModernLogo({ size = 32, className = "" }: { size?: number, className?: string }) {
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }}>
+      <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-400 rounded-xl shadow-lg shadow-blue-500/30 transform -rotate-6"></div>
+      <div className="absolute inset-0 bg-[var(--surface)] border border-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center transform transition-transform hover:rotate-6">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[60%] h-[60%] text-[var(--text-primary)]">
+          <path d="M4 19L12 4L20 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12 4V19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// Sekmeler Arası Geçiş Animasyonu İçin Wrapper Bileşen
+function PageWrapper({ children, activeTab }: { children: React.ReactNode, activeTab: string }) {
+  return (
+    <motion.div
+      key={activeTab}
+      initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+      transition={{ duration: 0.3, type: "spring", stiffness: 260, damping: 20 }}
+      className="w-full h-full"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isLogging, setIsLogging] = useState(false);
@@ -35,24 +66,25 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background-start)] pb-24 safe-area-inset">
+    <div className="min-h-screen bg-[var(--background-start)] pb-24 safe-area-inset overflow-hidden">
       <div className="dot-bg" />
       <main className="px-5 pt-8 max-w-lg mx-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
-            <Dashboard
-              key="home"
-              onStartStudy={() => setActiveTab('pomodoro')}
-              onAddLog={() => setIsLogging(true)}
-              onNavigate={setActiveTab}
-            />
+            <PageWrapper activeTab="home">
+              <Dashboard
+                onStartStudy={() => setActiveTab('pomodoro')}
+                onAddLog={() => setIsLogging(true)}
+                onNavigate={setActiveTab}
+              />
+            </PageWrapper>
           )}
-          {activeTab === 'pomodoro' && <PomodoroView key="pomo" />}
-          {activeTab === 'subjects' && <SubjectsView key="subjects" onAddLog={() => setIsLogging(true)} />}
-          {activeTab === 'analytics' && <AnalyticsView key="analytics" onAddLog={() => setIsLogging(true)} />}
-          {activeTab === 'profile' && <ProfileView key="profile" />}
-          {activeTab === 'notes' && <NotesView key="notes" />}
-          {activeTab === 'planner' && <PlannerView key="planner" />}
+          {activeTab === 'pomodoro' && <PageWrapper activeTab="pomodoro"><PomodoroView /></PageWrapper>}
+          {activeTab === 'subjects' && <PageWrapper activeTab="subjects"><SubjectsView onAddLog={() => setIsLogging(true)} /></PageWrapper>}
+          {activeTab === 'analytics' && <PageWrapper activeTab="analytics"><AnalyticsView onAddLog={() => setIsLogging(true)} /></PageWrapper>}
+          {activeTab === 'profile' && <PageWrapper activeTab="profile"><ProfileView /></PageWrapper>}
+          {activeTab === 'notes' && <PageWrapper activeTab="notes"><NotesView /></PageWrapper>}
+          {activeTab === 'planner' && <PageWrapper activeTab="planner"><PlannerView /></PageWrapper>}
         </AnimatePresence>
       </main>
 
@@ -156,13 +188,14 @@ function Dashboard({ onStartStudy, onNavigate }: any) {
   }, []);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-      <div className="flex flex-col items-center justify-center text-center space-y-2 mb-8">
+    <div className="space-y-6">
+      <div className="flex flex-col items-center justify-center text-center space-y-3 mb-10 mt-2">
+        <ModernLogo size={48} className="mb-2" />
         <h1 className="text-3xl font-black text-[var(--text-primary)] tracking-tight">
           <TypewriterText />
         </h1>
-        <p className="text-sm text-[var(--text-secondary)] font-medium">
-          {dateStr} • <span className="text-blue-500 font-bold">{timeStr}</span>
+        <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-widest bg-white/5 py-1.5 px-4 rounded-full border border-white/5">
+          {dateStr} • <span className="text-blue-500">{timeStr}</span>
         </p>
       </div>
 
@@ -358,7 +391,7 @@ function Dashboard({ onStartStudy, onNavigate }: any) {
           )}
         </div>
       </MagneticCard>
-    </motion.div>
+    </div>
   );
 }
 
@@ -374,7 +407,7 @@ function PomodoroView() {
   }, []);
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center space-y-8 py-4">
+    <div className="flex flex-col items-center space-y-8 py-4">
       {/* Settings Modal Toggle */}
       <div className="w-full flex justify-between items-center">
         <h1 className="text-2xl font-black text-[var(--text-primary)]">Odak</h1>
@@ -470,7 +503,7 @@ function PomodoroView() {
           </div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -571,14 +604,33 @@ function SubjectsView({ onAddLog }: any) {
 
   const saveTopicStats = () => {
     if (!editingTopic) return;
-    localDb.updateSubject(editingTopic.id, { solvedQuestions: parseInt(qCount) || 0, hasSolved: true });
+
+    const newCount = parseInt(qCount) || 0;
+    const oldCount = editingTopic.solvedQuestions || 0;
+    const diff = newCount - oldCount;
+
+    localDb.updateSubject(editingTopic.id, { solvedQuestions: newCount, hasSolved: true });
+
+    // Eğer soru sayısı arttıysa, analizler için bir oturum kaydı oluştur
+    if (diff > 0) {
+      localDb.addStudySession({
+        subject: editingTopic.name,
+        duration: 0, // Sadece soru girişi olduğu için süre 0 kabul ediliyor
+        correctCount: 0,  // Doğru/yanlış bilinmediği için şimdilik 0
+        wrongCount: 0,
+        totalQuestions: diff, // Toplam soruya ekleniyor (Sorular sekmesinde görünür)
+        timestamp: Date.now(),
+        type: 'manual'
+      });
+    }
+
     refreshData();
     setEditingTopic(null);
     toast.success('Güncellendi.');
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center bg-white/5 p-1 rounded-2xl border border-white/5 mx-auto mb-6 max-w-md gap-1">
         <button onClick={() => setSubTab('courses')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${subTab === 'courses' ? 'bg-blue-500 text-white shadow-lg' : 'text-slate-400'}`}>Dersler</button>
         <button onClick={() => setSubTab('exams')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${subTab === 'exams' ? 'bg-blue-500 text-white shadow-lg' : 'text-slate-400'}`}>Sınavlar</button>
@@ -870,7 +922,7 @@ function SubjectsView({ onAddLog }: any) {
           )
         }
       </AnimatePresence >
-    </motion.div >
+    </div>
   );
 }
 
@@ -886,16 +938,16 @@ function AnalyticsView({ onAddLog }: any) {
 
       <button onClick={onAddLog} className="w-full relative overflow-hidden glass-panel p-5 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border-blue-500/30 flex items-center justify-between group shadow-lg shadow-blue-500/5 transition-all hover:scale-[1.02] active:scale-[0.98]">
         <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12 group-hover:rotate-45 transition-transform duration-500"><Brain size={80} /></div>
-        <div className="flex items-center gap-4 relative z-10">
+        <div className="flex items-center gap-4 relative z-10 w-full">
           <div className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
             <PlusCircle size={24} />
           </div>
-          <div className="text-left">
-            <h3 className="text-[13px] font-black text-blue-500 uppercase tracking-widest">Buradan Soru Soru Ekle</h3>
+          <div className="text-left flex-1">
+            <h3 className="text-[13px] font-black text-blue-500 uppercase tracking-widest">Manuel Soru Çözümü Ekle</h3>
             <p className="text-xs font-bold text-[var(--text-secondary)]">Manuel soru ve süre gir</p>
           </div>
+          <ChevronRight size={20} className="text-blue-500 relative z-10 opacity-70" />
         </div>
-        <ChevronRight size={20} className="text-blue-500 relative z-10" />
       </button>
       <div className="grid grid-cols-2 gap-4">
         <div className="glass-panel p-5 overflow-hidden relative h-32 flex flex-col justify-between"><div className="absolute top-0 right-0 p-3 opacity-5"><Brain size={48} /></div><div><p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Toplam Soru</p><h3 className="text-2xl font-black">{stats.questionStats.total}</h3></div><div className="text-emerald-400 bg-emerald-400/10 w-fit px-1.5 py-0.5 rounded-md text-[10px] font-bold">%{stats.questionStats.accuracy} Başarı</div></div>
