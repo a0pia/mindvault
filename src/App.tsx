@@ -20,15 +20,14 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Yeni Modern Logo Bileşeni
+// Yeni Modern Logo Bileşeni (Minimalist M)
 function ModernLogo({ size = 32, className = "" }: { size?: number, className?: string }) {
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }}>
-      <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-400 rounded-xl shadow-lg shadow-blue-500/30 transform -rotate-6"></div>
-      <div className="absolute inset-0 bg-[var(--surface)] border border-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center transform transition-transform hover:rotate-6">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[60%] h-[60%] text-[var(--text-primary)]">
-          <path d="M4 19L12 4L20 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M12 4V19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-400 rounded-xl shadow-lg transform rotate-3"></div>
+      <div className="absolute inset-0 bg-[var(--surface)] border border-white/30 backdrop-blur-md rounded-xl flex items-center justify-center transform transition-transform hover:-translate-y-0.5 hover:rotate-0 duration-300">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[65%] h-[65%] text-blue-500 drop-shadow-sm">
+          <path d="M4 19V5L12 14L20 5V19" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
     </div>
@@ -537,6 +536,9 @@ function SubjectsView({ onAddLog }: any) {
   // Topic editing state
   const [editingTopic, setEditingTopic] = useState<any>(null);
   const [qCount, setQCount] = useState('');
+  const [tCorrect, setTCorrect] = useState('');
+  const [tWrong, setTWrong] = useState('');
+  const [tDuration, setTDuration] = useState('');
 
   // Delete tag confirm
   const [tagToDelete, setTagToDelete] = useState('');
@@ -607,18 +609,23 @@ function SubjectsView({ onAddLog }: any) {
 
     const newCount = parseInt(qCount) || 0;
     const oldCount = editingTopic.solvedQuestions || 0;
-    const diff = newCount - oldCount;
 
-    localDb.updateSubject(editingTopic.id, { solvedQuestions: newCount, hasSolved: true });
+    // Calculate total either from explicitly entered sum or the total box
+    const explicitTotal = (parseInt(tCorrect) || 0) + (parseInt(tWrong) || 0);
+    const calculatedTotal = explicitTotal > 0 ? explicitTotal : newCount;
+    // Use the max of the explicitly entered total vs newCount to avoid losing inputted data when empty
+    const diff = calculatedTotal > oldCount ? calculatedTotal - oldCount : 0;
 
-    // Eğer soru sayısı arttıysa, analizler için bir oturum kaydı oluştur
-    if (diff > 0) {
+    // We only process if new questions were solved or explicit correct/wrong inputted
+    localDb.updateSubject(editingTopic.id, { solvedQuestions: Math.max(oldCount, calculatedTotal), hasSolved: true });
+
+    if (calculatedTotal > 0 || parseInt(tDuration) > 0) {
       localDb.addStudySession({
         subject: editingTopic.name,
-        duration: 0, // Sadece soru girişi olduğu için süre 0 kabul ediliyor
-        correctCount: 0,  // Doğru/yanlış bilinmediği için şimdilik 0
-        wrongCount: 0,
-        totalQuestions: diff, // Toplam soruya ekleniyor (Sorular sekmesinde görünür)
+        duration: parseInt(tDuration) || 0,
+        correctCount: parseInt(tCorrect) || 0,
+        wrongCount: parseInt(tWrong) || 0,
+        totalQuestions: diff > 0 ? diff : calculatedTotal,
         timestamp: Date.now(),
         type: 'manual'
       });
@@ -626,6 +633,9 @@ function SubjectsView({ onAddLog }: any) {
 
     refreshData();
     setEditingTopic(null);
+    setTCorrect('');
+    setTWrong('');
+    setTDuration('');
     toast.success('Güncellendi.');
   };
 
@@ -887,16 +897,26 @@ function SubjectsView({ onAddLog }: any) {
                 <h3 className="text-2xl font-black mb-1 text-[var(--text-primary)]">{editingTopic.name}</h3>
                 <div className="w-12 h-1 bg-blue-500 mx-auto mb-8 rounded-full" />
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Çözülen Soru Sayısı</label>
-                    <input type="number" value={qCount} onChange={(e) => setQCount(e.target.value)} className="w-full bg-white/5 border border-white/5 text-3xl font-black text-center py-6 rounded-3xl outline-none focus:border-blue-500/30" placeholder="0" />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Toplam Çözülen</label>
+                      <input type="number" value={qCount} onChange={(e) => setQCount(e.target.value)} className="w-full bg-white/5 border border-white/5 text-xl font-black text-center py-3 rounded-2xl outline-none focus:border-blue-500/30" placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Süre (Dk)</label>
+                      <input type="number" value={tDuration} onChange={(e) => setTDuration(e.target.value)} className="w-full bg-white/5 border border-white/5 text-xl font-black text-center py-3 rounded-2xl outline-none focus:border-yellow-500/30 text-yellow-500" placeholder="0" />
+                    </div>
                   </div>
-                  <div className="flex gap-4">
-                    <button onClick={() => setEditingTopic(null)} className="flex-1 text-slate-500 font-bold uppercase text-xs">İptal</button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="number" value={tCorrect} onChange={(e) => setTCorrect(e.target.value)} placeholder="Doğru (Ops.)" className="glass-input text-sm text-center bg-emerald-500/5 border-emerald-500/20 text-emerald-500 placeholder-emerald-500/50" />
+                    <input type="number" value={tWrong} onChange={(e) => setTWrong(e.target.value)} placeholder="Yanlış (Ops.)" className="glass-input text-sm text-center bg-rose-500/5 border-rose-500/20 text-rose-500 placeholder-rose-500/50" />
+                  </div>
+                  <div className="flex gap-4 mt-2">
+                    <button onClick={() => { setEditingTopic(null); setTCorrect(''); setTWrong(''); setTDuration(''); }} className="flex-1 text-slate-500 font-bold uppercase text-xs">İptal</button>
                     <button onClick={saveTopicStats} className="flex-[2] py-4 bg-blue-500 text-white rounded-3xl font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all">GÜNCELLE</button>
                   </div>
-                  <button onClick={() => { localDb.deleteSubject(editingTopic.id); refreshData(); setEditingTopic(null); }} className="w-full text-red-500/30 hover:text-red-500 text-[10px] font-black uppercase tracking-widest pt-4 transition-colors">Konuyu Listeden Sil</button>
+                  <button onClick={() => { localDb.deleteSubject(editingTopic.id); refreshData(); setEditingTopic(null); }} className="w-full text-red-500/30 hover:text-red-500 text-[10px] font-black uppercase tracking-widest pt-2 transition-colors">Konuyu Listeden Sil</button>
                 </div>
               </motion.div>
             </div>
